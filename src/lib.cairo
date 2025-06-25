@@ -1,4 +1,3 @@
-
 // Cosmic Trader Contract - Gamified Perpetual Trading on Starknet
 // A comprehensive smart contract system for gamified perpetual trading
 // including user management, XP tracking, leaderboards, and achievement NFTs
@@ -11,10 +10,12 @@ pub mod interfaces {
     pub mod achievement_interface;
 }
 
-// Contract implementations
-pub mod user_management;
-pub mod trading;
+// Combined contract implementation
+pub mod cosmic_trader;
 
-// Re-export main contracts for easy access
-pub use user_management::UserManagement;
-pub use trading::Trading;
+// Legacy contracts (now deprecated in favor of combined contract)
+// pub mod user_management;
+// pub mod trading;
+
+// Re-export main contract for easy access
+pub use cosmic_trader::CosmicTrader;

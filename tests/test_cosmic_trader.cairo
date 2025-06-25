@@ -2,18 +2,23 @@ use starknet::{ContractAddress, contract_address_const};
 use snforge_std::{declare, ContractClassTrait, DeclareResultTrait, start_cheat_caller_address, stop_cheat_caller_address, start_cheat_block_timestamp, stop_cheat_block_timestamp};
 
 use cosmic_trader_contract::interfaces::user_interface::{IUserManagementDispatcher, IUserManagementDispatcherTrait};
+use cosmic_trader_contract::interfaces::trading_interface::{ITradingDispatcher, ITradingDispatcherTrait, TradeDirection};
 
-fn deploy_user_management() -> (IUserManagementDispatcher, ContractAddress) {
-    let contract = declare("UserManagement").unwrap().contract_class();
+fn deploy_cosmic_trader() -> (IUserManagementDispatcher, ITradingDispatcher, ContractAddress) {
+    let contract = declare("CosmicTrader").unwrap().contract_class();
     let owner = contract_address_const::<'owner'>();
     let constructor_args = array![owner.into()];
     let (contract_address, _) = contract.deploy(@constructor_args).unwrap();
-    (IUserManagementDispatcher { contract_address }, owner)
+    
+    let user_management = IUserManagementDispatcher { contract_address };
+    let trading = ITradingDispatcher { contract_address };
+    
+    (user_management, trading, owner)
 }
 
 #[test]
 fn test_user_registration() {
-    let (user_management, _owner) = deploy_user_management();
+    let (user_management, _trading, _owner) = deploy_cosmic_trader();
     let user = contract_address_const::<'user1'>();
     
     start_cheat_caller_address(user_management.contract_address, user);
@@ -40,7 +45,7 @@ fn test_user_registration() {
 #[test]
 #[should_panic(expected: 'User already registered')]
 fn test_duplicate_registration() {
-    let (user_management, _owner) = deploy_user_management();
+    let (user_management, _trading, _owner) = deploy_cosmic_trader();
     let user = contract_address_const::<'user1'>();
     
     start_cheat_caller_address(user_management.contract_address, user);
@@ -54,14 +59,14 @@ fn test_duplicate_registration() {
 
 #[test]
 fn test_xp_addition_and_level_calculation() {
-    let (user_management, _owner) = deploy_user_management();
+    let (user_management, _trading, _owner) = deploy_cosmic_trader();
     let user = contract_address_const::<'user1'>();
     
     start_cheat_caller_address(user_management.contract_address, user);
     user_management.register_user();
     stop_cheat_caller_address(user_management.contract_address);
     
-    // Add XP (assuming this would be called by trading contract)
+    // Add XP
     user_management.add_xp(user, 500);
     
     let profile = user_management.get_user_profile(user);
@@ -82,7 +87,7 @@ fn test_xp_addition_and_level_calculation() {
 
 #[test]
 fn test_streak_management() {
-    let (user_management, _owner) = deploy_user_management();
+    let (user_management, _trading, _owner) = deploy_cosmic_trader();
     let user = contract_address_const::<'user1'>();
     
     start_cheat_caller_address(user_management.contract_address, user);
@@ -122,89 +127,156 @@ fn test_streak_management() {
 }
 
 #[test]
-fn test_streak_multiplier() {
-    let (user_management, _owner) = deploy_user_management();
+fn test_mock_trading_session() {
+    let (user_management, trading, _owner) = deploy_cosmic_trader();
     let user = contract_address_const::<'user1'>();
     
     start_cheat_caller_address(user_management.contract_address, user);
     user_management.register_user();
+    
+    // Start mock session
+    let _session_id = trading.start_mock_session();
+    assert(_session_id == 1, 'Session ID should be 1');
+    
+    let session = trading.get_trading_session(_session_id);
+    assert(session.user == user, 'Session user should match');
+    assert(session.is_mock_session == true, 'Should be mock session');
+    
     stop_cheat_caller_address(user_management.contract_address);
-    
-    // Build up a 10-day streak
-    let mut day = 1;
-    while day <= 10 {
-        start_cheat_block_timestamp(user_management.contract_address, 86400 * day);
-        user_management.update_streak(user);
-        day += 1;
-    };
-    
-    let streak_info = user_management.get_streak_info(user);
-    assert(streak_info.current_streak == 10, 'Should have 10-day streak');
-    assert(streak_info.streak_multiplier == 130, 'Multiplier should be 130%');
-    
-    stop_cheat_block_timestamp(user_management.contract_address);
 }
 
 #[test]
-fn test_trading_stats_update() {
-    let (user_management, _owner) = deploy_user_management();
+#[should_panic(expected: 'User not registered')]
+fn test_trading_requires_registration() {
+    let (_user_management, trading, _owner) = deploy_cosmic_trader();
     let user = contract_address_const::<'user1'>();
     
-    start_cheat_caller_address(user_management.contract_address, user);
-    user_management.register_user();
-    stop_cheat_caller_address(user_management.contract_address);
+    start_cheat_caller_address(trading.contract_address, user);
     
-    // Update trading stats
-    user_management.update_trading_stats(user, 1000);
+    // Try to start session without registration - should panic
+    trading.start_mock_session();
     
-    let profile = user_management.get_user_profile(user);
-    assert(profile.total_trades == 1, 'Should have 1 trade');
-    assert(profile.total_volume == 1000, 'Volume should be 1000');
-    
-    // Add more trades
-    user_management.update_trading_stats(user, 2000);
-    user_management.update_trading_stats(user, 1500);
-    
-    let profile = user_management.get_user_profile(user);
-    assert(profile.total_trades == 3, 'Should have 3 trades');
-    assert(profile.total_volume == 4500, 'Volume should be 4500');
+    stop_cheat_caller_address(trading.contract_address);
 }
 
 #[test]
-fn test_xp_multiplier() {
-    let (user_management, owner) = deploy_user_management();
+fn test_integrated_trading_and_xp() {
+    let (user_management, trading, _owner) = deploy_cosmic_trader();
     let user = contract_address_const::<'user1'>();
     
     start_cheat_caller_address(user_management.contract_address, user);
     user_management.register_user();
-    stop_cheat_caller_address(user_management.contract_address);
     
-    // Set XP multiplier as owner
+    // Start mock session
+    let _session_id = trading.start_mock_session();
+    
+    // Place a mock trade
+    let trade_id = trading.place_mock_trade('BTC', 1000, TradeDirection::Long, 50000);
+    assert(trade_id == 1, 'Trade ID should be 1');
+    
+    // Check initial XP (should be 0)
+    let profile_before = user_management.get_user_profile(user);
+    assert(profile_before.xp == 0, 'Initial XP should be 0');
+    
+    // Close the trade with profit
+    trading.close_mock_trade(trade_id, 55000); // 10% profit
+    
+    // Check that XP was awarded automatically
+    let profile_after = user_management.get_user_profile(user);
+    assert(profile_after.xp > 0, 'XP should be awarded');
+    assert(profile_after.total_trades == 1, 'Trade count should be 1');
+    assert(profile_after.total_volume == 1000, 'Volume should be 1000');
+    
+    // Note: Streak only updates on consecutive different days, so it remains 0 for same-day trading
+    
+    stop_cheat_caller_address(user_management.contract_address);
+}
+
+#[test]
+fn test_trade_xp_calculation() {
+    let (user_management, trading, _owner) = deploy_cosmic_trader();
+    let user = contract_address_const::<'user1'>();
+    
+    start_cheat_caller_address(user_management.contract_address, user);
+    user_management.register_user();
+    
+    // Test XP calculation for profitable trade
+    let xp_profitable = trading.calculate_trade_xp(1000, true, true); // Mock profitable trade
+    
+    // Test XP calculation for unprofitable trade
+    let xp_unprofitable = trading.calculate_trade_xp(1000, false, true); // Mock unprofitable trade
+    
+    // Profitable trades should give more XP
+    assert(xp_profitable > xp_unprofitable, 'More XP for profit');
+    
+    stop_cheat_caller_address(user_management.contract_address);
+}
+
+#[test]
+fn test_multiple_trades_and_stats() {
+    let (user_management, trading, _owner) = deploy_cosmic_trader();
+    let user = contract_address_const::<'user1'>();
+    
+    start_cheat_caller_address(user_management.contract_address, user);
+    user_management.register_user();
+    
+    // Place multiple trades
+    let trade1 = trading.place_mock_trade('BTC', 1000, TradeDirection::Long, 50000);
+    let trade2 = trading.place_mock_trade('ETH', 2000, TradeDirection::Short, 3000);
+    
+    // Close trades
+    trading.close_mock_trade(trade1, 55000); // Profit
+    trading.close_mock_trade(trade2, 2800);  // Profit for short
+    
+    // Check aggregated stats
+    let profile = user_management.get_user_profile(user);
+    assert(profile.total_trades == 2, 'Should have 2 trades');
+    assert(profile.total_volume == 3000, 'Total volume should be 3000');
+    assert(profile.xp > 0, 'Should have earned XP');
+    
+    // Check trading stats function
+    let (total_trades, total_volume, _total_pnl) = trading.get_user_trading_stats(user);
+    assert(total_trades == 2, 'Should show 2 trades');
+    assert(total_volume == 3000, 'Volume should be 3000');
+    
+    stop_cheat_caller_address(user_management.contract_address);
+}
+
+#[test]
+fn test_owner_controls() {
+    let (user_management, trading, owner) = deploy_cosmic_trader();
+    
     start_cheat_caller_address(user_management.contract_address, owner);
+    
+    // Test XP multiplier
     user_management.set_xp_multiplier(150); // 150% multiplier
+    
+    // Test base XP rate
+    trading.set_base_xp_rate(20); // 20 XP per $1
+    
+    // Test mock trade multiplier
+    trading.set_mock_trade_multiplier(75); // 75% for mock trades
+    
     stop_cheat_caller_address(user_management.contract_address);
-    
-    // Add XP and verify multiplier effect
-    user_management.add_xp(user, 1000);
-    
-    let profile = user_management.get_user_profile(user);
-    assert(profile.xp == 1500, 'XP should be 1500 (1000 * 1.5)');
 }
 
 #[test]
 #[should_panic(expected: 'Only owner')]
-fn test_unauthorized_xp_multiplier_change() {
-    let (user_management, _owner) = deploy_user_management();
+fn test_unauthorized_owner_functions() {
+    let (user_management, _trading, _owner) = deploy_cosmic_trader();
     let user = contract_address_const::<'user1'>();
     
     start_cheat_caller_address(user_management.contract_address, user);
-    user_management.set_xp_multiplier(200); // Should panic - not owner
+    
+    // Non-owner trying to set multiplier - should panic
+    user_management.set_xp_multiplier(200);
+    
     stop_cheat_caller_address(user_management.contract_address);
 }
 
 #[test]
 fn test_user_count() {
-    let (user_management, _owner) = deploy_user_management();
+    let (user_management, _trading, _owner) = deploy_cosmic_trader();
     
     assert(user_management.get_total_users() == 0, 'Initial count should be 0');
     

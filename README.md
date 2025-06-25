@@ -1,273 +1,146 @@
-# Cosmic Trader Contract - Gamified Perpetual Trading on Starknet
+# Cosmic Trader - Gamified Perpetual Trading Contract
 
-A comprehensive smart contract system for gamified perpetual trading that makes trading accessible, fun, and rewarding for everyone. Built on Starknet with Cairo.
+A comprehensive smart contract system for gamified perpetual trading on Starknet, featuring user management, XP tracking, streak systems, and trading functionality in a single efficient contract.
 
-## 🌟 Overview
+## 🚀 Architecture
 
-Cosmic Trader transforms traditional perpetual trading into an engaging, gamified experience that combines:
+### Combined Contract Approach
 
-- **Pokémon GO/Duolingo-style mechanics** with XP, levels, and streaks
-- **Achievement NFTs** for milestones and accomplishments
-- **Leaderboards** and competitive features
-- **Free-to-play mode** with mock trading
-- **Gas-free transactions** via Starknet paymaster integration
+This project uses a **single combined contract** (`CosmicTrader`) that merges user management and trading functionality for optimal gas efficiency and simplified deployment.
 
-## 🏗️ Architecture
+**Why Combined?**
 
-The system consists of modular smart contracts:
+- ✅ **Gas Efficient**: No inter-contract calls needed
+- ✅ **Atomic Operations**: XP updates happen in same transaction as trades
+- ✅ **Simple Deployment**: Single contract to deploy and manage
+- ✅ **Direct Integration**: Trading automatically updates user stats and streaks
 
-### Core Contracts
+## 📁 Project Structure
 
-1. **UserManagement** - User profiles, XP tracking, levels, and streaks
-2. **Trading** - Mock and real trading with Extended API integration
-3. **Leaderboard** - Rankings and competitive features (planned)
-4. **AchievementNFT** - NFT rewards for milestones (planned)
+```
+src/
+├── cosmic_trader.cairo          # Main combined contract
+├── interfaces/
+│   ├── user_interface.cairo     # User management interface
+│   ├── trading_interface.cairo  # Trading interface
+│   ├── leaderboard_interface.cairo
+│   └── achievement_interface.cairo
+└── lib.cairo                    # Module exports
 
-### Key Features
-
-- **XP System**: Earn experience points for trades, streaks, and achievements
-- **Level Progression**: Exponential leveling system with visual rewards
-- **Streak Mechanics**: Daily trading streaks with XP multipliers
-- **Mock Trading**: Free-to-play mode for onboarding and practice
-- **Real Trading**: Integration with Extended API for actual perpetual trades
-- **Achievement System**: NFT collectibles for reaching milestones
-
-## 📋 Requirements for v0/POC
-
-✅ **Completed:**
-
-- User registration and profile management
-- XP tracking for trades and streaks
-- Mock trading system for free-to-play mode
-- Comprehensive test suite
-- Modular contract architecture
-
-🔄 **In Progress:**
-
-- Basic leaderboard system
-- Achievement NFT contract
-- Extended API integration
-
-📋 **Planned:**
-
-- Frontend design proposal
-- Mobile-first frontend with Starknet.dart
-- Paymaster integration for gas-free transactions
-
-## 🚀 Quick Start
-
-### Prerequisites
-
-- [Scarb](https://docs.swmansion.com/scarb/) - Cairo package manager
-- [Starknet Foundry](https://foundry-rs.github.io/starknet-foundry/) - Testing framework
-
-### Installation
-
-1. Clone the repository:
-
-```bash
-git clone <repository-url>
-cd cosmic_trader_contract
+tests/
+└── test_cosmic_trader.cairo     # Comprehensive test suite
 ```
 
-2. Build the project:
+## 🎮 Features
+
+### User Management
+
+- User registration and profile management
+- XP system with configurable multipliers
+- Progressive leveling (exponential XP requirements)
+- Daily streak tracking with bonus multipliers
+- Trading statistics aggregation
+
+### Trading System
+
+- Mock trading sessions for onboarding
+- Real trading integration (ready for Extended API)
+- Automatic XP rewards based on trading volume
+- P&L calculation and tracking
+- Trade history and active trade management
+
+### Gamification
+
+- **XP System**: 10 XP per $1 trading volume (configurable)
+- **Levels**: Progressive levels requiring 50% more XP each
+- **Streaks**: Daily consecutive trading with up to 100% XP bonus
+- **Multipliers**: Global and streak-based XP multipliers
+
+## 🛠️ Contract Deployment
+
+### Building
 
 ```bash
 scarb build
 ```
 
-3. Run tests:
+### Testing
 
 ```bash
-snforge test
+scarb test
 ```
 
-## 📚 Smart Contract Documentation
-
-### UserManagement Contract
-
-Manages user profiles, XP, levels, and streaks.
-
-**Key Functions:**
-
-- `register_user()` - Register a new user
-- `add_xp(user, amount)` - Add XP to user (called by trading contract)
-- `update_streak(user)` - Update daily trading streak
-- `get_user_profile(user)` - Get complete user profile
-- `calculate_level_from_xp(xp)` - Calculate level from XP amount
-
-**Level System:**
-
-- Level 1: 0 XP
-- Level 2: 1,000 XP
-- Level 3: 1,500 XP
-- Each subsequent level requires 50% more XP
-
-**Streak System:**
-
-- Daily trading increases streak
-- Streak multiplier: 100% + (streak_days \* 3%), capped at 200%
-- Missing a day resets streak to 0
-
-### Trading Contract
-
-Handles both mock and real trading with XP rewards.
-
-**Key Functions:**
-
-- `start_mock_session()` - Begin free-to-play trading session
-- `place_mock_trade(asset, amount, direction, price)` - Place mock trade
-- `close_mock_trade(trade_id, exit_price)` - Close mock trade
-- `place_real_trade(...)` - Place real trade (Extended API integration)
-- `get_user_trades(user)` - Get all user trades
-- `calculate_trade_xp(volume, profitable, is_mock)` - Calculate XP rewards
-
-**XP Calculation:**
-
-- Base: 10 XP per $1 trading volume
-- Profitable trade bonus: +20% XP
-- Mock trade penalty: -50% XP (configurable)
-- Streak multiplier applied from UserManagement contract
-
-## 🧪 Testing
-
-The project includes comprehensive tests for all major functionality:
+### Deployment to Sepolia
 
 ```bash
-# Run all tests
-snforge test
-
-# Run specific test file
-snforge test tests/test_user_management.cairo
-snforge test tests/test_trading.cairo
+sncast --account <your-account> declare --network sepolia --contract-name CosmicTrader
 ```
 
-**Test Coverage:**
+**Successfully Deployed:**
 
-- User registration and profile management
-- XP addition and level calculation
-- Streak tracking and multipliers
-- Mock trading lifecycle
-- Trade placement and closure
-- P&L calculation
-- Daily volume tracking
-- Admin functions and access control
+- **Class Hash**: `0x026e9f7afcd9810f46f7b6b38aac60307c4de204a7553d55079bc43046572407`
+- **View on Starkscan**: [Contract](https://sepolia.starkscan.co/class/0x026e9f7afcd9810f46f7b6b38aac60307c4de204a7553d55079bc43046572407)
 
-## 🎮 Gamification Features
+## 🧪 Test Results
 
-### XP and Levels
+All 12 tests passing:
 
-- **XP Sources**: Trading volume, profitable trades, daily streaks, achievements
-- **Level Benefits**: Visual progression, unlock new features, increased multipliers
-- **Level Display**: Traditional RPG-style level progression
+- ✅ User registration and profile management
+- ✅ XP addition and level calculations
+- ✅ Streak management and multipliers
+- ✅ Mock trading sessions
+- ✅ Integrated trading with automatic XP rewards
+- ✅ Trading statistics tracking
+- ✅ Owner controls and authorization
+- ✅ Error handling and edge cases
 
-### Streak System
+## 🎯 Usage Example
 
-- **Daily Streaks**: Trade at least once per day to maintain streak
-- **Streak Rewards**: Up to 100% XP bonus for 30+ day streaks
-- **Streak Recovery**: Missing a day resets to 0 (but max streak is preserved)
+```cairo
+// Deploy contract
+let cosmic_trader = ICosmicTraderDispatcher { contract_address };
 
-### Achievement System (Planned)
+// Register user
+cosmic_trader.register_user();
 
-- **Categories**: Trading, Streak, Volume, Social, Milestone, Seasonal
-- **Rarities**: Common, Rare, Epic, Legendary
-- **NFT Rewards**: Each achievement mints a unique NFT
-- **Ecosystem Integration**: NFTs can be displayed in user's castle/garden
+// Start trading session
+let session_id = cosmic_trader.start_mock_session();
 
-### Social Features (Planned)
+// Place trade
+let trade_id = cosmic_trader.place_mock_trade('BTC', 1000, TradeDirection::Long, 50000);
 
-- **Leaderboards**: XP, Volume, Streaks, Seasonal rankings
-- **Clans/Alliances**: Team-based challenges and competitions
-- **Social Sharing**: Share achievements and performance
+// Close trade (automatically awards XP and updates streak)
+cosmic_trader.close_mock_trade(trade_id, 55000);
+
+// Check updated profile
+let profile = cosmic_trader.get_user_profile(user_address);
+// profile.xp > 0, profile.total_trades = 1, etc.
+```
 
 ## 🔧 Configuration
 
-### Contract Parameters
-
-**UserManagement:**
-
-- `xp_multiplier`: Global XP multiplier (default: 100%)
-- `level_requirements`: XP required for each level
-
-**Trading:**
-
-- `base_xp_rate`: XP per unit volume (default: 10 XP per $1)
-- `mock_trade_multiplier`: XP reduction for mock trades (default: 50%)
-
 ### Admin Functions
 
-- `set_xp_multiplier(multiplier)` - Adjust global XP rates
-- `set_base_xp_rate(rate)` - Adjust trading XP rates
-- `set_mock_trade_multiplier(multiplier)` - Adjust mock trade XP
+- `set_xp_multiplier(multiplier: u32)`: Global XP multiplier
+- `set_base_xp_rate(rate: u256)`: Base XP per dollar volume
+- `set_mock_trade_multiplier(multiplier: u32)`: XP percentage for mock trades
 
-## 🚀 Deployment
+### Default Settings
 
-### Local Development
+- Base XP Rate: 10 XP per $1 volume
+- Mock Trade Multiplier: 50% (half XP for practice trades)
+- Streak Bonus: +3% XP per consecutive day (max 100% bonus)
+- Level Progression: Each level requires 50% more XP than previous
 
-1. Start local Starknet devnet:
+## 🚀 Future Enhancements
 
-```bash
-starknet-devnet
-```
+The modular interface design allows for easy addition of:
 
-2. Deploy contracts:
-
-```bash
-sncast deploy --url http://localhost:5050 --contract UserManagement
-sncast deploy --url http://localhost:5050 --contract Trading
-```
-
-### Testnet Deployment
-
-1. Configure network in `snfoundry.toml`
-2. Deploy with proper constructor arguments
-3. Verify contract addresses and functionality
-
-## 🔮 Future Enhancements
-
-### v1 Features
-
+- **Leaderboard Contract**: For ranking and competitions
+- **Achievement NFTs**: Mint NFTs for milestones
+- **Governance**: DAO voting for parameter changes
 - **Extended API Integration**: Real perpetual trading
-- **Leaderboard Contract**: Rankings and seasons
-- **Achievement NFTs**: Milestone rewards
-- **Ecosystem Contract**: User's virtual castle/garden
 
-### v2 Features
+## 📝 License
 
-- **Clan System**: Team-based trading competitions
-- **Advanced Analytics**: Trading performance insights
-- **Social Features**: Friend systems and challenges
-- **Mobile Widgets**: Real-time portfolio on lock screen
-
-### v3 Features
-
-- **Cross-chain Trading**: Multi-chain perpetual support
-- **AI Trading Assistant**: Personalized trading tips
-- **Marketplace**: Trade achievement NFTs
-- **Tournament System**: Scheduled trading competitions
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Write tests for your changes
-4. Ensure all tests pass (`snforge test`)
-5. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-6. Push to the branch (`git push origin feature/AmazingFeature`)
-7. Open a Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- **Starknet** - L2 scaling solution for Ethereum
-- **Cairo** - Smart contract programming language
-- **Extended** - Perpetual trading infrastructure
-- **OpenZeppelin** - Security-focused contract libraries
-- **Starknet Foundry** - Testing and development tools
-
----
-
-**Built with ❤️ for the Starknet ecosystem**
+This project is for educational and demonstration purposes.
