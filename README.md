@@ -81,18 +81,6 @@ sncast --account <your-account> declare --network sepolia --contract-name Cosmic
 - **Class Hash**: `0x026e9f7afcd9810f46f7b6b38aac60307c4de204a7553d55079bc43046572407`
 - **View on Starkscan**: [Contract](https://sepolia.starkscan.co/class/0x026e9f7afcd9810f46f7b6b38aac60307c4de204a7553d55079bc43046572407)
 
-## 🧪 Test Results
-
-All 12 tests passing:
-
-- ✅ User registration and profile management
-- ✅ XP addition and level calculations
-- ✅ Streak management and multipliers
-- ✅ Mock trading sessions
-- ✅ Integrated trading with automatic XP rewards
-- ✅ Trading statistics tracking
-- ✅ Owner controls and authorization
-- ✅ Error handling and edge cases
 
 ## 🎯 Usage Example
 
@@ -144,3 +132,7 @@ The modular interface design allows for easy addition of:
 ## 📝 License
 
 This project is for educational and demonstration purposes.
+
+----
+
+**Built with ❤️ for the Starknet ecosystem**
