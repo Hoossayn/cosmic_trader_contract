@@ -17,6 +17,7 @@ pub struct Trade {
 
 #[derive(Drop, Serde, starknet::Store, Copy)]
 pub enum TradeDirection {
+    #[default]
     Long,
     Short,
 }

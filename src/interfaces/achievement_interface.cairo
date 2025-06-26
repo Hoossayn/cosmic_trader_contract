@@ -15,6 +15,7 @@ pub struct Achievement {
 
 #[derive(Drop, Serde, starknet::Store)]
 pub enum AchievementCategory {
+    #[default]
     Trading,
     Streak,
     Volume,
@@ -25,6 +26,7 @@ pub enum AchievementCategory {
 
 #[derive(Drop, Serde, starknet::Store)]
 pub enum AchievementRarity {
+    #[default]
     Common,
     Rare,
     Epic,
@@ -33,6 +35,7 @@ pub enum AchievementRarity {
 
 #[derive(Drop, Serde, starknet::Store)]
 pub enum RequirementType {
+    #[default]
     TotalTrades,
     TotalVolume,
     ConsecutiveStreak,

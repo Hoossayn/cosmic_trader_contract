@@ -1,3 +1,7 @@
+/// Cosmic Trader Contract - Gamified Perpetual Trading on Starknet
+/// A comprehensive smart contract system for gamified perpetual trading
+/// including user management, XP tracking, leaderboards, and achievement NFTs
+
 #[starknet::contract]
 pub mod CosmicTrader {
     use starknet::ContractAddress;
@@ -9,6 +13,20 @@ pub mod CosmicTrader {
     // Import interfaces and types
     use cosmic_trader_contract::interfaces::user_interface::{UserProfile, StreakInfo, IUserManagement};
     use cosmic_trader_contract::interfaces::trading_interface::{Trade, TradeDirection, TradingSession, ITrading};
+
+    /// Error constants for better error handling
+    mod Errors {
+        pub const USER_ALREADY_REGISTERED: felt252 = 'User already registered';
+        pub const USER_NOT_REGISTERED: felt252 = 'User not registered';
+        pub const NOT_TRADE_OWNER: felt252 = 'Not trade owner';
+        pub const TRADE_NOT_FOUND: felt252 = 'Trade not found';
+        pub const TRADE_ALREADY_CLOSED: felt252 = 'Trade already closed';
+        pub const NOT_SESSION_OWNER: felt252 = 'Not session owner';
+        pub const SESSION_ALREADY_ENDED: felt252 = 'Session already ended';
+        pub const ONLY_OWNER: felt252 = 'Only owner allowed';
+        pub const INVALID_AMOUNT: felt252 = 'Invalid amount';
+        pub const INVALID_PRICE: felt252 = 'Invalid price';
+    }
 
     #[storage]
     pub struct Storage {
@@ -143,11 +161,16 @@ pub mod CosmicTrader {
     // User Management Interface Implementation
     #[abi(embed_v0)]
     pub impl UserManagementImpl of IUserManagement<ContractState> {
+        /// Registers a new user in the cosmic trading system
+        /// 
+        /// # Panics
+        /// 
+        /// * If the user is already registered
         fn register_user(ref self: ContractState) {
             let caller = get_caller_address();
             let existing_user = self.users.entry(caller).read();
             
-            assert(existing_user.address.is_zero(), 'User already registered');
+            assert(existing_user.address.is_zero(), Errors::USER_ALREADY_REGISTERED);
             
             let current_time = get_block_timestamp();
             let user = UserProfile {
@@ -307,7 +330,7 @@ pub mod CosmicTrader {
         }
 
         fn set_xp_multiplier(ref self: ContractState, multiplier: u32) {
-            assert(get_caller_address() == self.owner.read(), 'Only owner');
+            assert(get_caller_address() == self.owner.read(), Errors::ONLY_OWNER);
             self.xp_multiplier.write(multiplier);
         }
 
@@ -338,7 +361,7 @@ pub mod CosmicTrader {
             };
 
             self.trading_sessions.entry(session_id).write(session);
-            self.user_sessions.entry(caller).append().write(session_id);
+            self.user_sessions.entry(caller).push(session_id);
             self.session_counter.write(session_id + 1);
 
             self.emit(Event::MockSessionStarted(MockSessionStarted {
@@ -523,8 +546,8 @@ pub mod CosmicTrader {
             };
 
             self.trades.entry(trade_id).write(trade);
-            self.user_trades.entry(caller).append().write(trade_id);
-            self.active_trades.entry(caller).append().write(trade_id);
+            self.user_trades.entry(caller).push(trade_id);
+            self.active_trades.entry(caller).push(trade_id);
             self.trade_counter.write(trade_id + 1);
 
             // Update daily volume

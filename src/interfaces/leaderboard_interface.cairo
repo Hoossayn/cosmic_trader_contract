@@ -10,6 +10,7 @@ pub struct LeaderboardEntry {
 
 #[derive(Drop, Serde, starknet::Store)]
 pub enum LeaderboardType {
+    #[default]
     XP,
     TradingVolume,
     ProfitLoss,
