@@ -261,7 +261,7 @@ fn test_owner_controls() {
 }
 
 #[test]
-#[should_panic(expected: 'Only owner')]
+#[should_panic(expected: 'Only owner allowed')]
 fn test_unauthorized_owner_functions() {
     let (user_management, _trading, _owner) = deploy_cosmic_trader();
     let user = contract_address_const::<'user1'>();
